@@ -25,10 +25,10 @@ func main() {
 
 	// Создание маршрутизатора и добавление маршрутов
 	router := mux.NewRouter()
-	router.HandleFunc("/api/get", handler.GetMessagesHandler).Methods("GET")
-	router.HandleFunc("/api/post", handler.PostMessageHandler).Methods("POST")
-	router.HandleFunc("/api/patch", handler.PatchMessageHandler).Methods("PATCH")
-	router.HandleFunc("/api/delete", handler.DeleteMessageHandler).Methods("DELETE")
+	router.HandleFunc("/tasks", handler.GetMessagesHandler).Methods("GET")
+	router.HandleFunc("/tasks", handler.PostMessageHandler).Methods("POST")
+	router.HandleFunc("/tasks/{id:[0-9]+}", handler.PatchMessageHandler).Methods("PATCH")
+	router.HandleFunc("/tasks/{id:[0-9]+}", handler.DeleteMessageHandler).Methods("DELETE")
 
 	// Запуск сервера
 	http.ListenAndServe(":8080", router)
