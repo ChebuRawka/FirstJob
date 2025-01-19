@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -132,13 +131,13 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Формируем ответ
-	response := responseBody{
-		Message: fmt.Sprintf("Task updated: %s", message.Task),
-	}
+	//response := responseBody{
+	//	Message: fmt.Sprintf("Task updated: %s", message.Task),
+	//}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(message)
 }
 
 // для DELETE запроса
@@ -161,13 +160,12 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Формируем ответ
-	response := responseBody{
-		Message: fmt.Sprintf("Task with ID %s has been deleted", id),
-	}
+	//response := responseBody{
+	//	Message: fmt.Sprintf("Task with ID %s has been deleted", id),
+	//}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusNoContent)
+
 }
 
 func main() {
