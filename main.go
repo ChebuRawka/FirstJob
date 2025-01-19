@@ -62,15 +62,15 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 	// Обновляем глобальную переменную task
 	//	task = body.Message // если все декодирование прошло успешно, мы присваиваем значение поля Message из структуры body глобал переменной task
 
-	// Формируем ответ
-	response := responseBody{ // создаем объект response responseBody
-		Message: fmt.Sprintf("Task created: %s", message.Task),
-	}
+	// Формируем ответ с созданной сущностью в формате JSON
+	//response := responseBody{ // создаем объект response responseBody
+	//	Message: fmt.Sprintf("Task created: %s", message.Task),
+	//}
 
 	// Отправляем успешный ответ
 	w.Header().Set("Content-Type", "application/json") // тело ответа будет содержать данные в формате JSON
 	w.WriteHeader(http.StatusOK)                       // отправляем статус HTTP 200 (OK), который означает успешный обработанный запрос.
-	json.NewEncoder(w).Encode(response)                // кодирования объекта response в JSON и отправки его в тело ответа.
+	json.NewEncoder(w).Encode(message)                 // кодирования объекта response в JSON и отправки его в тело ответа.
 }
 
 func GetMessages(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +92,84 @@ func GetMessages(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(messages)                // отправка json ответа. Encode - функция кодирует объект в json формат и отправляет в тело ответа
 }
 
+// для PATCH запроса
+func UpdateTask(w http.ResponseWriter, r *http.Request) {
+	var body requestBody
+	vars := mux.Vars(r) // Извлекаем параметры из URL (в данном случае ID задачи)
+	id := vars["id"]
+
+	// Проверка на пустое тело
+	if r.Body == nil || r.ContentLength == 0 {
+		http.Error(w, "Request body is empty", http.StatusBadRequest)
+		return
+	}
+
+	// Декодируем JSON из тела запроса
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		log.Printf("Error decoding JSON: %v", err)
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	// Находим задачу в базе данных по ID
+	var message Message
+	if err := DB.First(&message, id).Error; err != nil {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	// Обновляем поля задачи (например, Task или IsDone)
+	if body.Message != nil {
+		message.Task = body.Message.(string)
+	}
+
+	// Сохраняем обновленную задачу
+	if err := DB.Save(&message).Error; err != nil {
+		log.Printf("Error saving message: %v", err)
+		http.Error(w, "Failed to update task", http.StatusInternalServerError)
+		return
+	}
+
+	// Формируем ответ
+	response := responseBody{
+		Message: fmt.Sprintf("Task updated: %s", message.Task),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// для DELETE запроса
+func DeleteTask(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r) // Извлекаем параметры из URL (ID задачи)
+	id := vars["id"]
+
+	// Находим задачу в базе данных по ID
+	var message Message
+	if err := DB.First(&message, id).Error; err != nil {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	// Удаляем задачу из базы данных
+	if err := DB.Delete(&message).Error; err != nil {
+		log.Printf("Error deleting message: %v", err)
+		http.Error(w, "Failed to delete task", http.StatusInternalServerError)
+		return
+	}
+
+	// Формируем ответ
+	response := responseBody{
+		Message: fmt.Sprintf("Task with ID %s has been deleted", id),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 func main() {
 	// Вызываем метод InitDB() из файла db.go
 	InitDB()
@@ -99,13 +177,15 @@ func main() {
 	// Автоматическая миграция модели Message
 	// Создает таблицу в бд для модели Message
 	if err := DB.AutoMigrate(&Message{}); err != nil {
-		log.Fatal("Auto migration failed:", err)
+		log.Fatalf("Auto migration failed: %v", err)
 	}
 
 	//маршрутизация
 	router := mux.NewRouter()
 	router.HandleFunc("/api/messages", CreateMessage).Methods("POST")
 	router.HandleFunc("/api/messages", GetMessages).Methods("GET")
+	router.HandleFunc("/api/messages/{id}", UpdateTask).Methods("PATCH")  // PATCH для обновления задачи
+	router.HandleFunc("/api/messages/{id}", DeleteTask).Methods("DELETE") // DELETE для удаления задачи
 
 	http.ListenAndServe(":8080", router)
 }
