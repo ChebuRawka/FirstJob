@@ -25,7 +25,6 @@ func NewMessageRepository(db *gorm.DB) MessageRepository {
 }
 
 // CreateMessage - создание сообщения в БД
-// CreateMessage - создание сообщения в БД
 func (r *messageRepository) CreateMessage(message Message) (Message, error) {
 	// Если ID уже существует в запросе, то используем его. В противном случае, GORM сам установит ID.
 	if message.ID == 0 {
@@ -65,7 +64,6 @@ func (r *messageRepository) GetMessageByID(id uint) (Message, error) {
 	return message, nil
 }
 
-// UpdateMessageByID - обновление сообщения по ID
 // UpdateMessageByID - обновление сообщения по ID
 func (r *messageRepository) UpdateMessageByID(id uint, message Message) (Message, error) {
 	// Проверяем, существует ли сообщение с таким ID

@@ -4,32 +4,33 @@ import (
 	"FirstJobProject/internal/database"
 	"FirstJobProject/internal/handlers"
 	"FirstJobProject/internal/taskService"
-	"github.com/gorilla/mux"
+	"FirstJobProject/internal/web/tasks"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"log"
-	"net/http"
 )
 
 func main() {
-	// Инициализация базы данных
 	database.InitDB()
+	database.DB.AutoMigrate(&taskService.Message{})
 
-	// Автоматическая миграция модели Message
-	if err := database.DB.AutoMigrate(&taskService.Message{}); err != nil {
-		log.Fatalf("Auto migration failed: %v", err)
-	}
-
-	// Создание репозитория, сервиса и хендлера
 	repo := taskService.NewMessageRepository(database.DB)
 	service := taskService.NewService(repo)
+
 	handler := handlers.NewHandler(service)
 
-	// Создание маршрутизатора и добавление маршрутов
-	router := mux.NewRouter()
-	router.HandleFunc("/tasks", handler.GetMessagesHandler).Methods("GET")
-	router.HandleFunc("/tasks", handler.PostMessageHandler).Methods("POST")
-	router.HandleFunc("/tasks/{id:[0-9]+}", handler.PatchMessageHandler).Methods("PATCH")
-	router.HandleFunc("/tasks/{id:[0-9]+}", handler.DeleteMessageHandler).Methods("DELETE")
+	// Инициализируем echo
+	e := echo.New()
 
-	// Запуск сервера
-	http.ListenAndServe(":8080", router)
+	// используем Logger и Recover
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	// Прикол для работы в echo. Передаем и регистрируем хендлер в echo
+	strictHandler := tasks.NewStrictHandler(handler, nil) // тут будет ошибка
+	tasks.RegisterHandlers(e, strictHandler)
+
+	if err := e.Start(":8080"); err != nil {
+		log.Fatalf("failed to start with err: %v", err)
+	}
 }

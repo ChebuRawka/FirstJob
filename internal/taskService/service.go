@@ -20,6 +20,10 @@ func (s *MessageService) GetAllMessages() ([]Message, error) {
 	return s.repo.GetAllMessages()
 }
 
+func (s *MessageService) GetMessageByID(id uint, message Message) (Message, error) {
+	return s.repo.GetMessageByID(id)
+}
+
 // UpdateMessageByID - обновление сообщения через сервис
 func (s *MessageService) UpdateMessageByID(id uint, message Message) (Message, error) {
 	return s.repo.UpdateMessageByID(id, message)
@@ -27,5 +31,6 @@ func (s *MessageService) UpdateMessageByID(id uint, message Message) (Message, e
 
 // DeleteMessageByID - удаление сообщения через сервис
 func (s *MessageService) DeleteMessageByID(id uint) error {
+
 	return s.repo.DeleteMessageByID(id)
 }
