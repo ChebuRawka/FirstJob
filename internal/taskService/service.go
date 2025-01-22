@@ -20,7 +20,7 @@ func (s *MessageService) GetAllMessages() ([]Message, error) {
 	return s.repo.GetAllMessages()
 }
 
-func (s *MessageService) GetMessageByID(id uint, message Message) (Message, error) {
+func (s *MessageService) GetMessageByID(id uint) (Message, error) {
 	return s.repo.GetMessageByID(id)
 }
 

@@ -40,7 +40,7 @@ func (h *Handler) PatchTasksId(ctx context.Context, request tasks.PatchTasksIdRe
 	taskID := uint(request.Id)
 
 	// Пытаемся получить текущую задачу
-	currentTask, err := h.Service.GetMessageByID(taskID, taskService.Message{})
+	currentTask, err := h.Service.GetMessageByID(taskID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return tasks.PatchTasksId404JSONResponse{}, nil
@@ -49,12 +49,12 @@ func (h *Handler) PatchTasksId(ctx context.Context, request tasks.PatchTasksIdRe
 	}
 
 	// Обновляем поля, только если они переданы
-	taskRequest := request.Body
+	//	taskRequest := request.Body
 	if request.Body.Task != nil {
-		currentTask.Task = *taskRequest.Task
+		currentTask.Task = *request.Body.Task
 	}
 	if request.Body.IsDone != nil {
-		currentTask.IsDone = *taskRequest.IsDone
+		currentTask.IsDone = *request.Body.IsDone
 	}
 
 	// Пытаемся сохранить изменения

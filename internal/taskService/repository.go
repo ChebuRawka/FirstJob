@@ -81,7 +81,7 @@ func (r *messageRepository) UpdateMessageByID(id uint, message Message) (Message
 		updates["task"] = message.Task
 	}
 	// Если поле "is_done" не пустое, обновляем его
-	if message.IsDone != false {
+	if &message.IsDone != nil {
 		updates["is_done"] = message.IsDone
 	}
 
