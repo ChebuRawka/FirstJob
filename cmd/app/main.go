@@ -12,8 +12,9 @@ import (
 
 func main() {
 	database.InitDB()
-	database.DB.AutoMigrate(&taskService.Message{})
-
+	if err := database.DB.AutoMigrate(&taskService.Message{}); err != nil {
+		log.Fatalf("Error during migration: %v", err)
+	}
 	repo := taskService.NewMessageRepository(database.DB)
 	service := taskService.NewService(repo)
 
