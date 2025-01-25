@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // UserHandler - структура для обработки пользователей
@@ -32,10 +33,15 @@ func (h *UserHandler) PostUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid input"})
 	}
+
 	createdUser, err := h.Service.CreateUser(user)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return c.JSON(http.StatusConflict, map[string]string{"message": "User with this email already exists"})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error creating user"})
 	}
+
 	return c.JSON(http.StatusCreated, createdUser)
 }
 
@@ -44,7 +50,7 @@ func (h *UserHandler) PatchUserByID(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid ID"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid user ID"})
 	}
 	var user userService.User
 	if err := c.Bind(&user); err != nil {
@@ -52,6 +58,9 @@ func (h *UserHandler) PatchUserByID(c echo.Context) error {
 	}
 	updatedUser, err := h.Service.UpdateUserByID(uint(id), user)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return c.JSON(http.StatusConflict, map[string]string{"message": err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error updating user"})
 	}
 	return c.JSON(http.StatusOK, updatedUser)
