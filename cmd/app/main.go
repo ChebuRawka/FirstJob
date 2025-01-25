@@ -4,33 +4,51 @@ import (
 	"FirstJobProject/internal/database"
 	"FirstJobProject/internal/handlers"
 	"FirstJobProject/internal/taskService"
-	"FirstJobProject/internal/web/tasks"
+	"FirstJobProject/internal/userService"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"log"
 )
 
 func main() {
+	// Инициализируем базу данных
 	database.InitDB()
+
+	// Автоматическое применение миграций для задач
 	if err := database.DB.AutoMigrate(&taskService.Message{}); err != nil {
 		log.Fatalf("Error during migration: %v", err)
 	}
-	repo := taskService.NewMessageRepository(database.DB)
-	service := taskService.NewService(repo)
 
-	handler := handlers.NewHandler(service)
+	// Создаем репозиторий и сервис для задач
+	tasksRepo := taskService.NewMessageRepository(database.DB)
+	tasksService := taskService.NewService(tasksRepo)
+	tasksHandler := handlers.NewTaskHandler(tasksService)
 
-	// Инициализируем echo
+	// Создаем репозиторий и сервис для пользователей
+	userRepo := userService.NewUserRepository(database.DB)
+	userService := userService.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
+
+	// Инициализируем Echo
 	e := echo.New()
 
-	// используем Logger и Recover
+	// Используем Logger и Recover для обработки ошибок
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// Прикол для работы в echo. Передаем и регистрируем хендлер в echo
-	strictHandler := tasks.NewStrictHandler(handler, nil) // тут будет ошибка
-	tasks.RegisterHandlers(e, strictHandler)
+	// Регистрируем маршруты для задач
+	e.GET("/tasks", tasksHandler.GetTasks)
+	e.POST("/tasks", tasksHandler.PostTasks)
+	e.PATCH("/tasks/:id", tasksHandler.PatchTasksId)
+	e.DELETE("/tasks/:id", tasksHandler.DeleteTasksId)
 
+	// Регистрируем маршруты для пользователей
+	e.GET("/users", userHandler.GetUsers)
+	e.POST("/users", userHandler.PostUser)
+	e.PATCH("/users/:id", userHandler.PatchUserByID)
+	e.DELETE("/users/:id", userHandler.DeleteUserByID)
+
+	// Запускаем сервер
 	if err := e.Start(":8080"); err != nil {
 		log.Fatalf("failed to start with err: %v", err)
 	}
