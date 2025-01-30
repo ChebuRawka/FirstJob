@@ -1,6 +1,7 @@
 package taskService
 
 import (
+	"FirstJobProject/internal/userService"
 	"fmt"
 	"gorm.io/gorm"
 )
@@ -26,6 +27,13 @@ func NewMessageRepository(db *gorm.DB) MessageRepository {
 
 // CreateMessage - создание сообщения в БД
 func (r *messageRepository) CreateMessage(message Message) (Message, error) {
+	// Проверяем, существует ли пользователь с таким ID
+	var user userService.User
+	if err := r.db.First(&user, message.UserID).Error; err != nil {
+		// Если пользователь не найден, возвращаем ошибку
+		return Message{}, fmt.Errorf("user with ID %d not found", message.UserID)
+	}
+
 	// Если ID уже существует в запросе, то используем его. В противном случае, GORM сам установит ID.
 	if message.ID == 0 {
 		// Если ID не передан (или равен 0), то GORM будет использовать автоинкремент
@@ -49,9 +57,11 @@ func (r *messageRepository) CreateMessage(message Message) (Message, error) {
 }
 
 // GetAllMessages - получение всех сообщений
+// GetAllMessages - получение всех сообщений с подгрузкой пользователя
 func (r *messageRepository) GetAllMessages() ([]Message, error) {
 	var messages []Message
-	err := r.db.Where("deleted_at IS NULL").Find(&messages).Error // фильтруем записи с ненулевым DeletedAt
+	// Подгружаем связанные данные о пользователе с помощью Preload
+	err := r.db.Preload("User").Where("deleted_at IS NULL").Find(&messages).Error
 	return messages, err
 }
 
@@ -65,6 +75,7 @@ func (r *messageRepository) GetMessageByID(id uint) (Message, error) {
 }
 
 // UpdateMessageByID - обновление сообщения по ID
+// UpdateMessageByID - обновление сообщения по ID
 func (r *messageRepository) UpdateMessageByID(id uint, message Message) (Message, error) {
 	// Проверяем, существует ли сообщение с таким ID
 	var existingMessage Message
@@ -73,30 +84,29 @@ func (r *messageRepository) UpdateMessageByID(id uint, message Message) (Message
 		return Message{}, fmt.Errorf("message with ID %d not found", id)
 	}
 
-	// Создаем новый объект для обновления только измененных полей
-	updates := map[string]interface{}{}
-
-	// Если поле "task" не пустое, обновляем его
-	if message.Task != "" {
-		updates["task"] = message.Task
+	// Проверяем, существует ли пользователь с таким user_id
+	var user userService.User
+	if err := r.db.First(&user, message.UserID).Error; err != nil {
+		return Message{}, fmt.Errorf("user with ID %d not found", message.UserID)
 	}
-	// Если поле "is_done" не пустое, обновляем его
-
-	updates["is_done"] = message.IsDone
 
 	// Обновляем только те поля, которые переданы
-	if len(updates) > 0 {
-		result := r.db.Model(&Message{}).Where("id = ?", id).Updates(updates)
-		if result.Error != nil {
-			return Message{}, result.Error
-		}
+	updates := map[string]interface{}{
+		"task":    message.Task,
+		"is_done": message.IsDone,
 	}
 
-	// Возвращаем обновленную запись с актуальными данными
-	if err := r.db.First(&existingMessage, id).Error; err != nil {
-		return Message{}, fmt.Errorf("message with ID %d not found", id)
+	// Если поле "user_id" обновляется, добавляем его в обновления
+	if message.UserID != 0 {
+		updates["user_id"] = message.UserID
 	}
 
+	// Обновляем запись в базе данных
+	if err := r.db.Model(&existingMessage).Updates(updates).Error; err != nil {
+		return Message{}, err
+	}
+
+	// Возвращаем обновленную задачу
 	return existingMessage, nil
 }
 

@@ -1,9 +1,14 @@
 package taskService
 
-import "gorm.io/gorm"
+import (
+	"FirstJobProject/internal/userService" // импортируем нужный пакет
+	"gorm.io/gorm"
+)
 
 type Message struct {
 	gorm.Model
-	Task   string `json:"task"`    // Наш сервер будет ожидать json с полем text
-	IsDone bool   `json:"is_done"` // В Go используем CamelCase, в JSON - snake_case
+	Task   string           `json:"task"`
+	IsDone bool             `json:"is_done"`
+	UserID uint             `json:"user_id"`
+	User   userService.User `json:"user"` // здесь используем конкретную структуру User
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"FirstJobProject/internal/userService" // Убедитесь, что это правильный путь
 	"github.com/labstack/echo/v4"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,12 +31,21 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 // PostUser - создает нового пользователя
 func (h *UserHandler) PostUser(c echo.Context) error {
 	var user userService.User
+
+	// Биндим данные из запроса
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid input"})
 	}
 
+	// Проверка на наличие email и пароля
+	if user.Email == "" || user.Password == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Email and password are required"})
+	}
+
+	// Создаем пользователя
 	createdUser, err := h.Service.CreateUser(user)
 	if err != nil {
+		log.Println("Error creating user:", err)
 		if strings.Contains(err.Error(), "already exists") {
 			return c.JSON(http.StatusConflict, map[string]string{"message": "User with this email already exists"})
 		}

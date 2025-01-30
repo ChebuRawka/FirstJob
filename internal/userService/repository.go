@@ -3,6 +3,7 @@ package userService
 import (
 	"fmt"
 	"gorm.io/gorm"
+	"log"
 )
 
 // UserRepository - интерфейс для работы с пользователями
@@ -27,25 +28,38 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 
 // CreateUser - создание нового пользователя
 func (r *userRepository) CreateUser(user User) (User, error) {
-	if err := r.db.Create(&user).Error; err != nil {
-		return User{}, err
+	// Проверяем, существует ли пользователь с таким email
+	existingUser, err := r.GetUserByEmail(user.Email)
+	if err == nil && existingUser.ID != 0 {
+		log.Println("User with email already exists:", user.Email)
+		return User{}, fmt.Errorf("user with email %s already exists", user.Email)
 	}
+
+	// Создаем нового пользователя с задачами
+	if err := r.db.Create(&user).Error; err != nil {
+		return User{}, fmt.Errorf("error creating user: %v", err)
+	}
+
 	return user, nil
 }
 
 // GetAllUsers - получение всех пользователей
 func (r *userRepository) GetAllUsers() ([]User, error) {
 	var users []User
-	if err := r.db.Find(&users).Error; err != nil {
-		return nil, err
+	// Указываем модель явно
+	if err := r.db.Model(&User{}).Find(&users).Error; err != nil {
+		log.Println("Error fetching users:", err)
+		return nil, fmt.Errorf("error fetching users: %v", err)
 	}
+
 	return users, nil
 }
 
 // GetUserByID - получение пользователя по ID
 func (r *userRepository) GetUserByID(id uint) (User, error) {
 	var user User
-	if err := r.db.First(&user, id).Error; err != nil {
+	// Загружаем пользователя вместе с его задачами
+	if err := r.db.Preload("Messages").First(&user, id).Error; err != nil {
 		return User{}, err
 	}
 	return user, nil
@@ -55,14 +69,17 @@ func (r *userRepository) GetUserByID(id uint) (User, error) {
 func (r *userRepository) UpdateUserByID(id uint, user User) (User, error) {
 	var existingUser User
 
-	if err := r.db.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
+	// Указываем таблицу, с которой работаем
+	if err := r.db.Model(&User{}).Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 		if existingUser.ID != id {
 			return User{}, fmt.Errorf("user with email %s already exists", user.Email)
 		}
 	} else if err != gorm.ErrRecordNotFound {
 		return User{}, err
 	}
-	if err := r.db.First(&existingUser, id).Error; err != nil {
+
+	// Указываем таблицу для обновления
+	if err := r.db.Model(&User{}).First(&existingUser, id).Error; err != nil {
 		return User{}, err
 	}
 
@@ -74,13 +91,21 @@ func (r *userRepository) UpdateUserByID(id uint, user User) (User, error) {
 
 // DeleteUserByID - удаление пользователя по ID
 func (r *userRepository) DeleteUserByID(id uint) error {
+	// Вместо того чтобы передавать &User{}, используй саму структуру User{}
 	if err := r.db.Delete(&User{}, id).Error; err != nil {
 		return err
 	}
 	return nil
 }
+
 func (r *userRepository) GetUserByEmail(email string) (User, error) {
 	var user User
-	err := r.db.Where("email = ?", email).First(&user).Error
-	return user, err
+	// Здесь мы должны использовать .First для поиска одного пользователя по email
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return User{}, nil // Если пользователь не найден, возвращаем пустую структуру
+		}
+		return User{}, fmt.Errorf("error fetching user by email: %v", err)
+	}
+	return user, nil
 }
