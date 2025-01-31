@@ -22,8 +22,26 @@ func (s *MessageService) CreateMessage(message Message) (Message, error) {
 }
 
 // GetAllMessages - получение всех сообщений через сервис
-func (s *MessageService) GetAllMessages() ([]Message, error) {
-	return s.repo.GetAllMessages()
+func (s *MessageService) GetAllMessages() ([]TaskWithUserID, error) {
+	messages, err := s.repo.GetAllMessages()
+	if err != nil {
+		return nil, err
+	}
+
+	// Преобразуем сообщения в формат TaskWithUserID
+	var taskResponses []TaskWithUserID
+	for _, message := range messages {
+		taskResponses = append(taskResponses, TaskWithUserID{
+			ID:        message.ID,
+			Content:   message.Task,
+			IsDone:    message.IsDone,
+			UserID:    message.UserID, // Включаем user_id
+			CreatedAt: message.CreatedAt,
+			UpdatedAt: message.UpdatedAt,
+		})
+	}
+
+	return taskResponses, nil
 }
 
 var ErrMessageNotFound = errors.New("message not found")
@@ -51,6 +69,23 @@ func (s *MessageService) DeleteMessageByID(id uint) error {
 }
 
 // GetMessagesByUserID - получение всех задач для конкретного пользователя через сервис
-func (s *MessageService) GetMessagesByUserID(userID uint) ([]Message, error) {
-	return s.repo.GetMessagesByUserID(userID)
+func (s *MessageService) GetMessagesByUserID(userID uint) ([]TaskWithoutUser, error) {
+	messages, err := s.repo.GetMessagesByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Преобразуем сообщения в формат TaskWithoutUser
+	var taskResponses []TaskWithoutUser
+	for _, message := range messages {
+		taskResponses = append(taskResponses, TaskWithoutUser{
+			ID:        message.ID,
+			Content:   message.Task,
+			IsDone:    message.IsDone,
+			CreatedAt: message.CreatedAt,
+			UpdatedAt: message.UpdatedAt,
+		})
+	}
+
+	return taskResponses, nil
 }

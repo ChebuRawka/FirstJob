@@ -20,13 +20,11 @@ func NewTaskHandler(service *taskService.MessageService) *TaskHandler {
 
 // GetTasks - возвращает все задачи
 func (h *TaskHandler) GetTasks(c echo.Context) error {
-	allTasks, err := h.Service.GetAllMessages()
+	tasks, err := h.Service.GetAllMessages()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error retrieving tasks"})
 	}
-
-	// Возвращаем задачи с подгруженными пользователями
-	return c.JSON(http.StatusOK, allTasks)
+	return c.JSON(http.StatusOK, tasks)
 }
 
 // GetTasksByUserID - возвращает все задачи для конкретного пользователя
@@ -40,11 +38,9 @@ func (h *TaskHandler) GetTasksByUserID(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error retrieving tasks"})
 	}
-
 	if len(tasks) == 0 {
 		return c.JSON(http.StatusNotFound, map[string]string{"message": "No tasks found for this user"})
 	}
-
 	return c.JSON(http.StatusOK, tasks)
 }
 
