@@ -29,7 +29,25 @@ func (h *TaskHandler) GetTasks(c echo.Context) error {
 	return c.JSON(http.StatusOK, allTasks)
 }
 
-// PostTasks - создает новую задачу
+// GetTasksByUserID - возвращает все задачи для конкретного пользователя
+func (h *TaskHandler) GetTasksByUserID(c echo.Context) error {
+	userID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid user ID"})
+	}
+
+	tasks, err := h.Service.GetMessagesByUserID(uint(userID))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error retrieving tasks"})
+	}
+
+	if len(tasks) == 0 {
+		return c.JSON(http.StatusNotFound, map[string]string{"message": "No tasks found for this user"})
+	}
+
+	return c.JSON(http.StatusOK, tasks)
+}
+
 // PostTasks - создает новую задачу
 func (h *TaskHandler) PostTasks(c echo.Context) error {
 	var task taskService.Message

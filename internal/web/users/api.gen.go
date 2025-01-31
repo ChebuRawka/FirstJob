@@ -15,6 +15,30 @@ import (
 	strictecho "github.com/oapi-codegen/runtime/strictmiddleware/echo"
 )
 
+// Task defines model for Task.
+type Task struct {
+	// CreatedAt Timestamp when the task was created
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+
+	// DeletedAt Timestamp when the task was soft-deleted
+	DeletedAt *time.Time `json:"deleted_at"`
+
+	// Id Unique identifier for the task
+	Id *int `json:"id,omitempty"`
+
+	// IsDone Indicates whether the task is completed
+	IsDone *bool `json:"is_done,omitempty"`
+
+	// Task Description of the task
+	Task *string `json:"task,omitempty"`
+
+	// UpdatedAt Timestamp when the task was last updated
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+
+	// UserId ID of the user associated with the task
+	UserId *int `json:"user_id,omitempty"`
+}
+
 // User defines model for User.
 type User struct {
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
@@ -22,6 +46,9 @@ type User struct {
 	Email     *string    `json:"email,omitempty"`
 	Id        *int64     `json:"id,omitempty"`
 	Password  *string    `json:"password,omitempty"`
+
+	// Tasks List of tasks assigned to the user
+	Tasks     *[]Task    `json:"tasks,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 }
 
@@ -197,11 +224,11 @@ type DeleteUserByIDResponseObject interface {
 	VisitDeleteUserByIDResponse(w http.ResponseWriter) error
 }
 
-type DeleteUserByID200Response struct {
+type DeleteUserByID204Response struct {
 }
 
-func (response DeleteUserByID200Response) VisitDeleteUserByIDResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
+func (response DeleteUserByID204Response) VisitDeleteUserByIDResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
 	return nil
 }
 

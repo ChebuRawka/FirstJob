@@ -97,7 +97,7 @@ paths:
             type: integer
             format: int64
       responses:
-        '200':
+        '204':
           description: User deleted
         '404':
           description: User not found
@@ -249,22 +249,29 @@ components:
       properties:
         id:
           type: integer
+          description: Unique identifier for the task
         task:
           type: string
+          description: Description of the task
         is_done:
           type: boolean
+          description: Indicates whether the task is completed
         user_id:
           type: integer
+          description: ID of the user associated with the task
         created_at:
           type: string
           format: date-time
+          description: Timestamp when the task was created
         updated_at:
           type: string
           format: date-time
+          description: Timestamp when the task was last updated
         deleted_at:
           type: string
           format: date-time
           nullable: true
+          description: Timestamp when the task was soft-deleted
 
     UpdateTaskRequest:
       type: object
@@ -272,6 +279,7 @@ components:
         task:
           type: string
           nullable: true
+          description: Updated description of the task
 
     ErrorResponse:
       type: object

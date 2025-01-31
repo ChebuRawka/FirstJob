@@ -13,6 +13,7 @@ type MessageRepository interface {
 	GetMessageByID(id uint) (Message, error) // Добавляем метод для получения сообщения по ID
 	UpdateMessageByID(id uint, message Message) (Message, error)
 	DeleteMessageByID(id uint) error
+	GetMessagesByUserID(id uint) ([]Message, error)
 }
 
 // messageRepository - структура, которая реализует интерфейс MessageRepository
@@ -60,8 +61,7 @@ func (r *messageRepository) CreateMessage(message Message) (Message, error) {
 // GetAllMessages - получение всех сообщений с подгрузкой пользователя
 func (r *messageRepository) GetAllMessages() ([]Message, error) {
 	var messages []Message
-	// Подгружаем связанные данные о пользователе с помощью Preload
-	err := r.db.Preload("User").Where("deleted_at IS NULL").Find(&messages).Error
+	err := r.db.Where("deleted_at IS NULL").Find(&messages).Error
 	return messages, err
 }
 
@@ -125,4 +125,11 @@ func (r *messageRepository) DeleteMessageByID(id uint) error {
 	}
 
 	return nil
+}
+
+// GetMessagesByUserID - получение всех задач для конкретного пользователя
+func (r *messageRepository) GetMessagesByUserID(userID uint) ([]Message, error) {
+	var messages []Message
+	err := r.db.Where("user_id = ? AND deleted_at IS NULL", userID).Find(&messages).Error
+	return messages, err
 }

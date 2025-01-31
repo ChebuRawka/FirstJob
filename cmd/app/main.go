@@ -42,6 +42,10 @@ func main() {
 	e.PATCH("/tasks/:id", tasksHandler.PatchTasksId)
 	e.DELETE("/tasks/:id", tasksHandler.DeleteTasksId)
 
+	//Маршрут для получения всех задач для конкретного пользака:
+
+	e.GET("/users/:id/tasks", tasksHandler.GetTasksByUserID)
+
 	// Регистрируем маршруты для пользователей
 	e.GET("/users", userHandler.GetUsers)
 	e.POST("/users", userHandler.PostUser)
